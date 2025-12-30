@@ -1,0 +1,45 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Connection configured via `prisma.config.ts` for Prisma v7+.
+  // If you need to override in CI, set DATABASE_URL in environment.
+  
+}
+model User {
+  id           String         @id @default(uuid())
+  email        String         @unique
+  name         String?
+  passwordHash String
+  status       UserStatus     @default(ACTIVE)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  refreshTokens RefreshToken[]
+}
+model RefreshToken {
+  id          String    @id @default(uuid())
+  jti         String    @unique
+  tokenHash   String
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}

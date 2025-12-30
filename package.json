@@ -1,0 +1,18 @@
+{
+  "name": "saas-platform",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "dev:web": "pnpm --filter web dev",
+    "dev:api": "pnpm --filter core-api start:dev",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
+  },
+  "devDependencies": {
+    "prisma": "7.2.0"
+  },
+  "dependencies": {
+    "@prisma/client": "7.2.0"
+  }
+}
