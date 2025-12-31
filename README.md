@@ -88,7 +88,7 @@ NestJS API (apps/core-api)
 - **Backend:** Node.js, NestJS, TypeScript
 - **Frontend:** Next.js
 - **Database:** PostgreSQL
-- **ORM:** Prisma (v6)
+- **ORM:** Prisma (v7)
 - **Queue:** BullMQ + Redis
 - **Auth:** JWT, Argon2
 - **Testing:** Jest, Supertest
@@ -134,7 +134,7 @@ pnpm dev
 
 API runs at:
 ```
-http://localhost:4001
+http://localhost:4000
 ```
 
 ### Run Web (optional)
