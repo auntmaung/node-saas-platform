@@ -3,13 +3,14 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
-
+import { TenantsModule } from './tenants/tenants.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
     HealthModule,
     AuthModule,
+    TenantsModule,
   ],
 })
 export class AppModule {}
