@@ -11,29 +11,32 @@ datasource db {
   provider = "postgresql"
   // Connection configured via `prisma.config.ts` for Prisma v7+.
   // If you need to override in CI, set DATABASE_URL in environment.
-  
 }
+
 model User {
-  id           String         @id @default(uuid())
-  email        String         @unique
+  id           String     @id @default(uuid())
+  email        String     @unique
   name         String?
   passwordHash String
-  status       UserStatus     @default(ACTIVE)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   refreshTokens RefreshToken[]
+  memberships   Membership[]
+  invites       Invite[]
 }
-model RefreshToken {
-  id          String    @id @default(uuid())
-  jti         String    @unique
-  tokenHash   String
-  expiresAt   DateTime
-  revokedAt   DateTime?
-  createdAt   DateTime  @default(now())
 
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+model RefreshToken {
+  id        String    @id @default(uuid())
+  jti       String    @unique
+  tokenHash String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([expiresAt])
@@ -42,4 +45,71 @@ model RefreshToken {
 enum UserStatus {
   ACTIVE
   DISABLED
+}
+
+model Tenant {
+  id        String       @id @default(uuid())
+  name      String
+  slug      String       @unique
+  status    TenantStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  memberships Membership[]
+  invites     Invite[]
+}
+
+model Membership {
+  id        String   @id @default(uuid())
+  role      Role     @default(MEMBER)
+  createdAt DateTime @default(now())
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+  @@index([userId])
+  @@index([tenantId])
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum TenantStatus {
+  ACTIVE
+  DISABLED
+}
+
+model Invite {
+  id         String       @id @default(uuid())
+  token      String       @unique
+  email      String
+  role       Role         @default(MEMBER)
+  status     InviteStatus @default(PENDING)
+  expiresAt  DateTime
+  createdAt  DateTime     @default(now())
+  acceptedAt DateTime?
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdByUserId String
+  createdBy       User   @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, email, status])
+  @@index([tenantId])
+  @@index([email])
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+  EXPIRED
 }
