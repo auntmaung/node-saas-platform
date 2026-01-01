@@ -6,6 +6,7 @@
     "dev": "pnpm -r --parallel dev",
     "dev:web": "pnpm --filter web dev",
     "dev:api": "pnpm --filter core-api start:dev",
+    "dev:worker": "pnpm --filter worker dev",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down"
   },

@@ -53,23 +53,25 @@ export class TenantsController {
 async invite(
   @Param('tenantId') tenantId: string,
   @CurrentUser() user: CurrentUserPayload,
-  @Body() dto: CreateInviteDto
+  @Body() dto: CreateInviteDto,
+  @Req() req: any
 ) {
   const email = dto.email.toLowerCase();
   const role = dto.role ?? Role.MEMBER;
+  const reqId = req.headers['x-request-id'];
 
-  const invite = await this.tenants.createInvite(tenantId, user.userId, email, role);
+  const invite = await this.tenants.createInvite(tenantId, user.userId, email, role, reqId);
 
-  // In Day 6 worker you’ll “send email”. For now return token.
   return {
     id: invite.id,
     email: invite.email,
     role: invite.role,
     status: invite.status,
     expiresAt: invite.expiresAt,
-    token: invite.token, // return for dev/demo; remove in real prod
+    token: invite.token, // dev/demo
   };
 }
+
 @Post('invites/accept')
 async accept(@CurrentUser() user: CurrentUserPayload, @Body() dto: AcceptInviteDto) {
   return this.tenants.acceptInvite(dto.token, user.userId);
