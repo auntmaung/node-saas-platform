@@ -25,6 +25,7 @@ model User {
   refreshTokens RefreshToken[]
   memberships   Membership[]
   invites       Invite[]
+  projects      Project[]
 }
 
 model RefreshToken {
@@ -57,6 +58,7 @@ model Tenant {
 
   memberships Membership[]
   invites     Invite[]
+  projects    Project[]
 }
 
 model Membership {
@@ -112,4 +114,22 @@ enum InviteStatus {
   ACCEPTED
   REVOKED
   EXPIRED
+}
+
+model Project {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdByUserId String
+  createdBy       User   @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, name])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, name])
 }
