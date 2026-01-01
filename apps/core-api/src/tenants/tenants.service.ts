@@ -3,10 +3,13 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Role } from '@prisma/client';
 import { InviteStatus } from '@prisma/client';
 import { randomUUID } from 'crypto';
-
+import { QueuesService } from '../queues/queues.service';
+import { createHash } from 'crypto';
 @Injectable()
 export class TenantsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+  private readonly queues: QueuesService,) {}
 
   async createTenant(userId: string, name: string, slug: string) {
     // Ensure slug unique
@@ -67,7 +70,7 @@ private inviteExpiryDate(days = 7) {
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000);
 }
 
-async createInvite(tenantId: string, createdByUserId: string, email: string, role: Role) {
+async createInvite(tenantId: string, createdByUserId: string, email: string, role: Role,reqId?: string,) {
   // If user already a member, don’t invite
   const existingMember = await this.prisma.membership.findUnique({
     where: { tenantId_userId: { tenantId, userId: createdByUserId } },
@@ -82,24 +85,45 @@ async createInvite(tenantId: string, createdByUserId: string, email: string, rol
     });
     if (targetMembership) throw new BadRequestException('User already a member');
   }
-
-  // Idempotency: reuse existing pending invite for tenant+email
+ const token = randomUUID() + randomUUID(); 
   const existingInvite = await this.prisma.invite.findFirst({
     where: { tenantId, email, status: InviteStatus.PENDING },
   });
-  if (existingInvite) return existingInvite;
+  // Idempotency: reuse existing pending invite for tenant+email
+  const invite = existingInvite ?? await this.prisma.invite.create({
+  data: {
+    tenantId,
+    createdByUserId,
+    email,
+    role,
+    token,
+    expiresAt: this.inviteExpiryDate(7),
+  },
+});
+const key = `${tenantId}|${email.toLowerCase()}`; // any delimiter except ':'
+const jobId = createHash('sha256').update(key).digest('hex');
 
-  const token = randomUUID() + randomUUID(); // long enough; unique indexed
-  return this.prisma.invite.create({
-    data: {
-      tenantId,
-      createdByUserId,
-      email,
-      role,
-      token,
-      expiresAt: this.inviteExpiryDate(7),
-    },
-  });
+ 
+
+// Enqueue email job (idempotent via jobId)
+await this.queues.queueNotifications().add(
+  'invite.email',
+  {
+    reqId,
+    inviteId: invite.id,
+    tenantId: invite.tenantId,
+    email: invite.email,
+    role: invite.role,
+    token: invite.token, // demo: in real life you'd send a URL
+    expiresAt: invite.expiresAt.toISOString(),
+  },
+  {
+    jobId: `invite-email-${jobId}`,
+  },
+);
+
+return invite;
+
 }
 
 async acceptInvite(token: string, userId: string) {

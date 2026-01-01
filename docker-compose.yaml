@@ -71,6 +71,22 @@ services:
       api:
         condition: service_started
 
+  worker:
+    container_name: saas-worker
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redis://redis:6379
+      # If your worker needs DB (optional):
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/saas
+    depends_on:
+      redis:
+        condition: service_started
+      db:
+        condition: service_healthy
+
 volumes:
   pgdata:
   redisdata:
