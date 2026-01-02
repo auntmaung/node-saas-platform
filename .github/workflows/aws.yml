@@ -28,28 +28,27 @@ jobs:
 
       - name: Rsync code to EC2
         run: |
-      rsync -az --delete \
-      --exclude ".git" \
-      --exclude "node_modules" \
-      --exclude ".pnpm-store" \
-      --exclude ".env" \
-      -e "ssh" \
-      ./ ec2-user@${{ secrets.EC2_HOST }}:/home/ec2-user/app
-
-- name: Deploy on EC2
-  run: |
-    ssh ec2-user@${{ secrets.EC2_HOST }} << 'EOF'
-      set -euo pipefail
-      cd /home/ec2-user/app
-
-      if docker compose version >/dev/null 2>&1; then
-        DC="docker compose"
-      else
-        DC="docker-compose"
-      fi
-
-      $DC up -d db redis
-      $DC up -d --build api worker web
-      $DC ps
-    EOF
-
+          rsync -az --delete \
+            --exclude ".git" \
+            --exclude "node_modules" \
+            --exclude ".pnpm-store" \
+            --exclude ".env" \
+            -e "ssh" \
+            ./ ec2-user@${{ secrets.EC2_HOST }}:/home/ec2-user/app
+      
+      - name: Deploy on EC2
+        run: |
+          ssh ec2-user@${{ secrets.EC2_HOST }} << 'EOF'
+            set -euo pipefail
+            cd /home/ec2-user/app
+      
+            if docker compose version >/dev/null 2>&1; then
+              DC="docker compose"
+            else
+              DC="docker-compose"
+            fi
+      
+            $DC up -d db redis
+            $DC up -d --build api worker web
+            $DC ps
+          EOF
