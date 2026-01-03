@@ -6,7 +6,9 @@ import { AuthModule } from './auth/auth.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { ProjectsModule } from './projects/projects.module';
 import { QueuesModule } from './queues/queues.module';
-
+import { AuditModule } from './audit/audit.module';
+import { AuditController } from './audit/audit.controller';
+import { BillingModule } from './billing/billing.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -16,6 +18,9 @@ import { QueuesModule } from './queues/queues.module';
     TenantsModule,
     ProjectsModule,
     QueuesModule,
+    AuditModule,
+    BillingModule,
   ],
+  controllers: [AuditController],
 })
 export class AppModule {}
