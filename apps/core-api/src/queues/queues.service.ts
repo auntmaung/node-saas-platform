@@ -1,18 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Queue } from 'bullmq';
+import { Queue as BullQueue} from 'bullmq';
 import IORedis from 'ioredis';
 
 @Injectable()
 export class QueuesService {
   private readonly connection: IORedis;
-  private readonly notificationsQueue: Queue;
+  private readonly notificationsQueue: BullQueue ;
 
   constructor(private readonly config: ConfigService) {
     const redisUrl = this.config.get<string>('REDIS_URL') ?? 'redis://localhost:6379';
     this.connection = new IORedis(redisUrl, { maxRetriesPerRequest: null });
 
-    this.notificationsQueue = new Queue('notifications', {
+    this.notificationsQueue = new BullQueue ('notifications', {
       connection: this.connection,
       defaultJobOptions: {
         attempts: 5,

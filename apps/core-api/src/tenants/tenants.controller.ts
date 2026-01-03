@@ -17,8 +17,8 @@ export class TenantsController {
   constructor(private readonly tenants: TenantsService) {}
 
   @Post()
-  create(@CurrentUser() user: CurrentUserPayload, @Body() dto: CreateTenantDto) {
-    return this.tenants.createTenant(user.userId, dto.name, dto.slug.toLowerCase());
+  create(@CurrentUser() user: CurrentUserPayload, @Body() dto: CreateTenantDto,@Req() req: any) {
+    return this.tenants.createTenant(user.userId, dto.name, dto.slug.toLowerCase()),{ reqId: req.headers['x-request-id'], ip: req.ip };
   }
 
   @Get()
@@ -73,8 +73,9 @@ async invite(
 }
 
 @Post('invites/accept')
-async accept(@CurrentUser() user: CurrentUserPayload, @Body() dto: AcceptInviteDto) {
-  return this.tenants.acceptInvite(dto.token, user.userId);
+async accept(@CurrentUser() user: CurrentUserPayload, @Body() dto: AcceptInviteDto, @Req() req: any) {
+   const reqId = req.headers['x-request-id'];
+  return this.tenants.acceptInvite(dto.token, user.userId, reqId);
 }
 
 }

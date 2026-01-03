@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post,Req, Query, UseGuards } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -42,7 +42,9 @@ export class ProjectsController {
     @Param('tenantId') tenantId: string,
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: CreateProjectDto,
+    @Req() req: any
   ) {
+     const reqId = req.headers['x-request-id'];
     return this.projects.create(tenantId, user.userId, dto.name, dto.description);
   }
 

@@ -2,14 +2,18 @@ import { BadRequestException  } from '@nestjs/common';
 import {Injectable} from '@nestjs/common';
 import {NotFoundException} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class ProjectsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService, 
+    private readonly audit: AuditService,
+  ) {}
 
-  async create(tenantId: string, userId: string, name: string, description?: string) {
+  async create(tenantId: string, userId: string, name: string, description?: string,reqId?: string) {
     try {
-      return await this.prisma.project.create({
+   const  project =  await this.prisma.project.create({
         data: {
           tenantId,
           createdByUserId: userId,
@@ -20,6 +24,17 @@ export class ProjectsService {
           id: true, tenantId: true, name: true, description: true, createdAt: true, updatedAt: true,
         },
       });
+      await this.audit.write({
+  tenantId,
+  actorUserId: userId,
+  action: 'PROJECT_CREATED',
+  resourceType: 'PROJECT',
+  resourceId: project.id,
+  reqId,
+  metadata: { name: project.name },
+});
+return project;
+
     } catch (e: any) {
       // Prisma unique constraint -> friendly message
       if (e?.code === 'P2002') throw new BadRequestException('Project name already exists in this tenant');

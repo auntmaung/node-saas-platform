@@ -5,13 +5,17 @@ import { InviteStatus } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { QueuesService } from '../queues/queues.service';
 import { createHash } from 'crypto';
+import { AuditService } from '../audit/audit.service';
 @Injectable()
 export class TenantsService {
   constructor(
     private readonly prisma: PrismaService,
-  private readonly queues: QueuesService,) {}
+    private readonly queues: QueuesService,
+    private readonly audit: AuditService,
+  )
+   {}
 
-  async createTenant(userId: string, name: string, slug: string) {
+  async createTenant(userId: string, name: string, slug: string,ctx?: { reqId?: string; ip?: string }) {
     // Ensure slug unique
     const existing = await this.prisma.tenant.findUnique({ where: { slug } });
     if (existing) throw new BadRequestException('Slug already in use');
@@ -24,6 +28,16 @@ export class TenantsService {
       });
       return t;
     });
+    await this.audit.write({
+    tenantId: tenant.id,
+    actorUserId: userId,
+    action: 'TENANT_CREATED',
+    resourceType: 'TENANT',
+    resourceId: tenant.id,
+    reqId: ctx?.reqId,
+    ip: ctx?.ip,
+    metadata: { name, slug },
+  });
 
     return tenant;
   }
@@ -121,12 +135,21 @@ await this.queues.queueNotifications().add(
     jobId: `invite-email-${jobId}`,
   },
 );
+await this.audit.write({
+  tenantId: invite.tenantId,
+  actorUserId: createdByUserId,
+  action: 'INVITE_CREATED',
+  resourceType: 'INVITE',
+  resourceId: invite.id,
+  reqId,
+  metadata: { email: invite.email, role: invite.role, expiresAt: invite.expiresAt.toISOString() },
+});
 
 return invite;
 
 }
 
-async acceptInvite(token: string, userId: string) {
+async acceptInvite(token: string, userId: string, reqId?: string,) {
   const invite = await this.prisma.invite.findUnique({ where: { token } });
   if (!invite) throw new NotFoundException('Invite not found');
 
@@ -163,6 +186,15 @@ async acceptInvite(token: string, userId: string) {
       data: { status: InviteStatus.ACCEPTED, acceptedAt: new Date() },
     });
   });
+    await this.audit.write({
+      tenantId: invite.tenantId,
+      actorUserId: userId,
+      action: 'INVITE_ACCEPTED',
+      resourceType: 'INVITE',
+      resourceId: invite.id,
+      reqId,
+      metadata: { email: invite.email, role: invite.role },
+    });
 
   return { ok: true, tenantId: invite.tenantId };
 }
