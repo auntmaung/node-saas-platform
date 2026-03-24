@@ -1,0 +1,67 @@
+.container {
+  min-height: 100vh;
+  background: #f9fafb;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 32px;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.logo {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.logoutBtn {
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.logoutBtn:hover {
+  background: #e5e7eb;
+}
+
+.main {
+  max-width: 640px;
+  margin: 48px auto;
+  padding: 0 24px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 32px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+.welcome {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+
+.email {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 8px;
+}
+
+.userId {
+  font-size: 13px;
+  color: #9ca3af;
+  font-family: monospace;
+}
