@@ -2,8 +2,11 @@ name: Deploy to EC2
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
+
+concurrency:
+  group: deploy-ec2
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -13,28 +16,39 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Set up SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          # Allow up to 15 min for the docker build on EC2
-          command_timeout: 15m
-          script: |
-            set -euo pipefail
-            cd ~/saas-platform
-            git pull origin main
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-            # Run the build in the background so the SSH session doesn't time out
+      - name: Add host key
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Rsync code to EC2
+        run: |
+          rsync -az --delete \
+            --exclude ".git" \
+            --exclude "node_modules" \
+            --exclude ".pnpm-store" \
+            --exclude ".env" \
+            -e "ssh" \
+            ./ ec2-user@${{ secrets.EC2_HOST }}:/home/ec2-user/app
+
+      - name: Deploy on EC2
+        run: |
+          ssh ec2-user@${{ secrets.EC2_HOST }} bash -s << 'ENDSSH'
+            set -euo pipefail
+            cd /home/ec2-user/app
+
+            # Build in background so SSH session doesn't time out
             nohup bash -c '
               docker compose up --build -d
               docker system prune -f
-            ' > ~/deploy.log 2>&1 &
+            ' > /home/ec2-user/deploy.log 2>&1 &
 
             BUILD_PID=$!
-
-            # Wait up to 12 minutes for the background build to finish
             TIMEOUT=720
             ELAPSED=0
             while kill -0 $BUILD_PID 2>/dev/null; do
@@ -46,6 +60,8 @@ jobs:
               fi
             done
 
-            echo "=== Deploy log ==="
-            tail -30 ~/deploy.log
+            echo "=== Deploy log (last 30 lines) ==="
+            tail -30 /home/ec2-user/deploy.log
+            echo "=== Running containers ==="
             docker compose ps
+          ENDSSH
