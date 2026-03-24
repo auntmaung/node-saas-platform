@@ -1,50 +1,43 @@
 #!/usr/bin/env bash
-# One-time EC2 bootstrap script.
-# Tested on Ubuntu 22.04 / 24.04 (Amazon Linux 2023: replace apt-get with dnf).
-# Run as a non-root user with sudo access.
+# One-time EC2 bootstrap — Amazon Linux 2023
+# Usage: bash ec2-bootstrap.sh <git-repo-url>
+# Example: bash ec2-bootstrap.sh https://github.com/auntmaung/node-saas-platform.git
 set -euo pipefail
 
-REPO_URL="${1:-}"        # e.g. git@github.com:yourorg/saas-platform.git
+REPO_URL="${1:-https://github.com/auntmaung/node-saas-platform.git}"
 DEPLOY_DIR="$HOME/saas-platform"
 
-# ── 1. Docker Engine ─────────────────────────────────────────────────────────
-echo "==> Installing Docker..."
-sudo apt-get update -y
-sudo apt-get install -y ca-certificates curl gnupg
-sudo install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
-  | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-sudo chmod a+r /etc/apt/keyrings/docker.gpg
+echo "==> [1/5] Installing Docker and Git..."
+sudo dnf update -y
+sudo dnf install -y docker git
 
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
-  https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
-  | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-sudo apt-get update -y
-sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-
-# ── 2. Add user to docker group (re-login required for it to take effect) ────
+echo "==> [2/5] Starting Docker service..."
+sudo systemctl enable --now docker
 sudo usermod -aG docker "$USER"
-echo "NOTE: Log out and back in (or run 'newgrp docker') for docker group to take effect."
 
-# ── 3. Clone repo ─────────────────────────────────────────────────────────────
-if [ -z "$REPO_URL" ]; then
-  echo "Usage: $0 <git-repo-url>"
-  echo "Skipping git clone — set up the repo manually at $DEPLOY_DIR"
-else
-  echo "==> Cloning repo..."
-  git clone "$REPO_URL" "$DEPLOY_DIR"
-fi
+echo "==> [3/5] Installing Docker Compose plugin..."
+COMPOSE_VERSION=$(curl -fsSL https://api.github.com/repos/docker/compose/releases/latest \
+  | grep '"tag_name"' | cut -d'"' -f4)
+sudo mkdir -p /usr/local/lib/docker/cli-plugins
+sudo curl -fsSL \
+  "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-linux-x86_64" \
+  -o /usr/local/lib/docker/cli-plugins/docker-compose
+sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+docker compose version
 
-# ── 4. Create .env from example ───────────────────────────────────────────────
-if [ -d "$DEPLOY_DIR" ]; then
-  cp "$DEPLOY_DIR/.env.example" "$DEPLOY_DIR/.env"
-  echo ""
-  echo "==> IMPORTANT: Edit $DEPLOY_DIR/.env and fill in all secrets before starting."
-  echo "    Use: nano $DEPLOY_DIR/.env"
-  echo ""
-fi
+echo "==> [4/5] Cloning repo to $DEPLOY_DIR..."
+git clone "$REPO_URL" "$DEPLOY_DIR"
 
-echo "==> Bootstrap complete."
-echo "    After editing .env, start the stack with:"
-echo "    cd $DEPLOY_DIR && docker compose up --build -d"
+echo "==> [5/5] Setting up .env..."
+cp "$DEPLOY_DIR/.env.example" "$DEPLOY_DIR/.env"
+
+echo ""
+echo "============================================================"
+echo " Bootstrap complete!"
+echo " IMPORTANT: Fill in secrets before starting the stack:"
+echo "   nano $DEPLOY_DIR/.env"
+echo ""
+echo " Then start:"
+echo "   newgrp docker"
+echo "   cd $DEPLOY_DIR && docker compose up --build -d"
+echo "============================================================"
