@@ -1,37 +1,40 @@
 import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 
 export default async function Home() {
   const baseUrl = process.env.CORE_API_BASE_URL ?? 'http://localhost:4000'
 
-  let api: any = null
+  let apiStatus = 'checking…'
   try {
     const res = await fetch(`${baseUrl}/health`, { cache: 'no-store' })
-    api = await res.json()
+    const data = await res.json()
+    apiStatus = data?.status ?? 'unknown'
   } catch {
-    api = { error: 'core-api not reachable' }
+    apiStatus = 'unreachable'
   }
 
   return (
-    <main style={{ fontFamily: 'system-ui', padding: 40, maxWidth: 480 }}>
-      <h1 style={{ fontSize: 26, fontWeight: 700, marginBottom: 8 }}>SaaS Platform</h1>
-      <p style={{ color: '#6b7280', marginBottom: 32 }}>API status: {api?.status ?? api?.error}</p>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-muted/40 px-4">
+      <div className="text-center space-y-6 max-w-md">
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold tracking-tight">SaaS Platform</h1>
+          <p className="text-muted-foreground">
+            API status:{' '}
+            <span className={apiStatus === 'ok' ? 'text-green-600 font-medium' : 'text-destructive font-medium'}>
+              {apiStatus}
+            </span>
+          </p>
+        </div>
 
-      <div style={{ display: 'flex', gap: 12 }}>
-        <Link href="/login" style={btnStyle('#6366f1', '#fff')}>Sign in</Link>
-        <Link href="/register" style={btnStyle('#f3f4f6', '#111')}>Register</Link>
+        <div className="flex gap-3 justify-center">
+          <Button asChild>
+            <Link href="/login">Sign in</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/register">Register</Link>
+          </Button>
+        </div>
       </div>
-    </main>
+    </div>
   )
-}
-
-function btnStyle(bg: string, color: string) {
-  return {
-    padding: '10px 20px',
-    background: bg,
-    color,
-    borderRadius: 6,
-    fontWeight: 600,
-    fontSize: 14,
-    textDecoration: 'none',
-  } as const
 }

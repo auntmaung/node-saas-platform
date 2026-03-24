@@ -4,14 +4,17 @@ import { useActionState } from 'react'
 import { useFormStatus } from 'react-dom'
 import Link from 'next/link'
 import { loginAction } from '@/app/actions/auth'
-import styles from '../auth.module.css'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 
 function SubmitButton() {
   const { pending } = useFormStatus()
   return (
-    <button type="submit" className={styles.button} disabled={pending}>
+    <Button type="submit" className="w-full" disabled={pending}>
       {pending ? 'Signing in…' : 'Sign in'}
-    </button>
+    </Button>
   )
 }
 
@@ -19,31 +22,41 @@ export default function LoginPage() {
   const [state, action] = useActionState(loginAction, null)
 
   return (
-    <div className={styles.container}>
-      <div className={styles.card}>
-        <h1 className={styles.title}>Sign in</h1>
-        <p className={styles.subtitle}>Welcome back</p>
+    <div className="min-h-screen flex items-center justify-center bg-muted/40 px-4">
+      <Card className="w-full max-w-sm">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl">Sign in</CardTitle>
+          <CardDescription>Enter your email and password to continue</CardDescription>
+        </CardHeader>
 
-        <form action={action} className={styles.form}>
-          {state?.error && <p className={styles.error}>{state.error}</p>}
+        <form action={action}>
+          <CardContent className="space-y-4">
+            {state?.error && (
+              <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md px-3 py-2">
+                {state.error}
+              </p>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" name="email" type="email" placeholder="you@example.com" required autoComplete="email" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" name="password" type="password" required autoComplete="current-password" />
+            </div>
+          </CardContent>
 
-          <div className={styles.field}>
-            <label htmlFor="email">Email</label>
-            <input id="email" name="email" type="email" required autoComplete="email" />
-          </div>
-
-          <div className={styles.field}>
-            <label htmlFor="password">Password</label>
-            <input id="password" name="password" type="password" required autoComplete="current-password" />
-          </div>
-
-          <SubmitButton />
+          <CardFooter className="flex flex-col gap-3">
+            <SubmitButton />
+            <p className="text-sm text-muted-foreground text-center">
+              No account?{' '}
+              <Link href="/register" className="text-primary font-medium hover:underline">
+                Register
+              </Link>
+            </p>
+          </CardFooter>
         </form>
-
-        <p className={styles.footer}>
-          No account? <Link href="/register">Register</Link>
-        </p>
-      </div>
+      </Card>
     </div>
   )
 }
