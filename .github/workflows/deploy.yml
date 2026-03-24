@@ -19,8 +19,33 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          # Allow up to 15 min for the docker build on EC2
+          command_timeout: 15m
           script: |
+            set -euo pipefail
             cd ~/saas-platform
             git pull origin main
-            docker compose up --build -d
-            docker system prune -f
+
+            # Run the build in the background so the SSH session doesn't time out
+            nohup bash -c '
+              docker compose up --build -d
+              docker system prune -f
+            ' > ~/deploy.log 2>&1 &
+
+            BUILD_PID=$!
+
+            # Wait up to 12 minutes for the background build to finish
+            TIMEOUT=720
+            ELAPSED=0
+            while kill -0 $BUILD_PID 2>/dev/null; do
+              sleep 10
+              ELAPSED=$((ELAPSED + 10))
+              if [ $ELAPSED -ge $TIMEOUT ]; then
+                echo "Build timed out after ${TIMEOUT}s"
+                exit 1
+              fi
+            done
+
+            echo "=== Deploy log ==="
+            tail -30 ~/deploy.log
+            docker compose ps
