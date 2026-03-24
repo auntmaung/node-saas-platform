@@ -1,7 +1,8 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { logoutAction } from '@/app/actions/auth'
-import styles from './dashboard.module.css'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 const API = process.env.CORE_API_BASE_URL ?? 'http://localhost:4000'
 
@@ -23,19 +24,49 @@ export default async function DashboardPage() {
   if (!user) redirect('/login')
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h1 className={styles.logo}>SaaS Platform</h1>
-        <form action={logoutAction}>
-          <button type="submit" className={styles.logoutBtn}>Sign out</button>
-        </form>
-      </div>
+    <div className="min-h-screen bg-muted/40">
+      <header className="bg-background border-b">
+        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+          <span className="font-semibold text-lg">SaaS Platform</span>
+          <form action={logoutAction}>
+            <Button variant="outline" size="sm" type="submit">Sign out</Button>
+          </form>
+        </div>
+      </header>
 
-      <main className={styles.main}>
-        <div className={styles.card}>
-          <p className={styles.welcome}>Welcome back</p>
-          <h2 className={styles.email}>{user.email}</h2>
-          <p className={styles.userId}>User ID: {user.userId}</p>
+      <main className="max-w-5xl mx-auto px-4 py-10">
+        <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Account</CardTitle>
+              <CardDescription>Your account details</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Email</p>
+                <p className="font-medium">{user.email}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">User ID</p>
+                <p className="text-sm font-mono text-muted-foreground">{user.userId}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick start</CardTitle>
+              <CardDescription>What you can do next</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm text-muted-foreground">
+              <p>✓ Account created and authenticated</p>
+              <p>✓ JWT access + refresh tokens active</p>
+              <p>→ Invite team members</p>
+              <p>→ Create your first project</p>
+            </CardContent>
+          </Card>
         </div>
       </main>
     </div>
