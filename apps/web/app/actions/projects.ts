@@ -43,7 +43,8 @@ export async function createProjectAction(_prev: unknown, formData: FormData) {
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    return { error: body.message ?? 'Failed to create project.' }
+    const message = Array.isArray(body.message) ? body.message[0] : (body.message ?? 'Failed to create project.')
+    return { error: message }
   }
 
   revalidatePath('/dashboard/projects')

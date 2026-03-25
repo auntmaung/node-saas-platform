@@ -1,4 +1,6 @@
 import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
+import { listTenantsAction } from '@/app/actions/tenant'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { InviteForm } from './invite-form'
 
@@ -22,7 +24,13 @@ const ROLE_BADGE: Record<string, string> = {
 export default async function TeamPage() {
   const cookieStore = await cookies()
   const accessToken = cookieStore.get('access_token')?.value ?? ''
-  const tenantId = cookieStore.get('current_tenant_id')?.value ?? ''
+
+  // Resolve active tenant the same way the layout does
+  const tenants = await listTenantsAction()
+  if (!tenants.length) redirect('/onboarding')
+  const savedId = cookieStore.get('current_tenant_id')?.value
+  const activeTenant = tenants.find((t: any) => t.tenantId === savedId) ?? tenants[0]
+  const tenantId = activeTenant.tenantId
 
   const members = await getMembers(tenantId, accessToken)
 

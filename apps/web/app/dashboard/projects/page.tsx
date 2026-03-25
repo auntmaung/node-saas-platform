@@ -1,13 +1,22 @@
 import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 import { listProjectsAction, deleteProjectAction } from '@/app/actions/projects'
+import { listTenantsAction } from '@/app/actions/tenant'
 import { CreateProjectForm } from './create-project-form'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
 export default async function ProjectsPage() {
   const cookieStore = await cookies()
-  const savedId = cookieStore.get('current_tenant_id')?.value ?? ''
-  const { items: projects } = await listProjectsAction(savedId)
+
+  // Resolve active tenant the same way the layout does
+  const tenants = await listTenantsAction()
+  if (!tenants.length) redirect('/onboarding')
+  const savedId = cookieStore.get('current_tenant_id')?.value
+  const activeTenant = tenants.find((t: any) => t.tenantId === savedId) ?? tenants[0]
+  const tenantId = activeTenant.tenantId
+
+  const { items: projects } = await listProjectsAction(tenantId)
 
   return (
     <div>
@@ -22,7 +31,7 @@ export default async function ProjectsPage() {
             <CardTitle className="text-base">New project</CardTitle>
           </CardHeader>
           <CardContent>
-            <CreateProjectForm tenantId={savedId} />
+            <CreateProjectForm tenantId={tenantId} />
           </CardContent>
         </Card>
 
@@ -41,7 +50,7 @@ export default async function ProjectsPage() {
                     {new Date(p.createdAt).toLocaleDateString()}
                   </p>
                 </div>
-                <form action={deleteProjectAction.bind(null, savedId, p.id)}>
+                <form action={deleteProjectAction.bind(null, tenantId, p.id)}>
                   <Button variant="ghost" size="sm" type="submit" className="text-destructive hover:text-destructive">
                     Delete
                   </Button>

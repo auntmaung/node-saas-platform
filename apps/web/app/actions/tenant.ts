@@ -2,6 +2,7 @@
 
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
 
 const API = process.env.CORE_API_BASE_URL ?? 'http://localhost:4000'
 
@@ -73,8 +74,10 @@ export async function inviteMemberAction(_prev: unknown, formData: FormData) {
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    return { error: body.message ?? 'Failed to send invite.' }
+    const message = Array.isArray(body.message) ? body.message[0] : (body.message ?? 'Failed to send invite.')
+    return { error: message }
   }
 
+  revalidatePath('/dashboard/team')
   return { ok: true }
 }
