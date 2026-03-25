@@ -1,0 +1,10 @@
+# Local development overrides — exposes DB and Redis ports for running tests from host
+# This file is automatically merged by `docker compose` locally.
+# On EC2/production: do NOT copy this file — leave it absent to keep ports unexposed.
+services:
+  db:
+    ports:
+      - "5435:5432"
+  redis:
+    ports:
+      - "6379:6379"

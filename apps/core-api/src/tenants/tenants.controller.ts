@@ -17,8 +17,9 @@ export class TenantsController {
   constructor(private readonly tenants: TenantsService) {}
 
   @Post()
-  create(@CurrentUser() user: CurrentUserPayload, @Body() dto: CreateTenantDto,@Req() req: any) {
-    return this.tenants.createTenant(user.userId, dto.name, dto.slug.toLowerCase()),{ reqId: req.headers['x-request-id'], ip: req.ip };
+  create(@CurrentUser() user: CurrentUserPayload, @Body() dto: CreateTenantDto, @Req() req: any) {
+    const ctx = { reqId: req.headers['x-request-id'], ip: req.ip }
+    return this.tenants.createTenant(user.userId, dto.name, dto.slug.toLowerCase(), ctx)
   }
 
   @Get()

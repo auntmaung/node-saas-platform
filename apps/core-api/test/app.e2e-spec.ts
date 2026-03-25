@@ -1,33 +1,25 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
-import { App } from 'supertest/types';
-import { AppModule } from './../src/app.module';
-import { PrismaService } from '../src/prisma/prisma.service';
+import { INestApplication } from '@nestjs/common'
+import request from 'supertest'
+import { buildApp, cleanDb } from './helpers'
+import { PrismaService } from '../src/prisma/prisma.service'
 
 describe('AppController (e2e)', () => {
-  let app: INestApplication<App>;
+  let app: INestApplication
+  let prisma: PrismaService
 
-  beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    })
-      // Mock PrismaService to avoid requiring the Prisma query engine during tests
-      .overrideProvider(PrismaService)
-      .useValue({
-        $connect: async () => {},
-        $disconnect: async () => {},
-      })
-      .compile();
+  beforeAll(async () => {
+    app = await buildApp()
+    prisma = app.get(PrismaService)
+    await cleanDb(prisma)
+  })
 
-    app = moduleFixture.createNestApplication();
-    await app.init();
-  });
+  afterAll(async () => {
+    await cleanDb(prisma)
+    await app.close()
+  })
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
-  });
-});
+  it('GET /health returns ok', async () => {
+    const res = await request(app.getHttpServer()).get('/health').expect(200)
+    expect(res.body.status).toBe('ok')
+  })
+})

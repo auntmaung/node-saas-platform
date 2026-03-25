@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
@@ -121,15 +121,15 @@ export class AuthService {
     // 2) Look up stored token by jti (rotation anchor)
     const record = await this.prisma.refreshToken.findUnique({ where: { jti } });
     if (!record || record.userId !== userId) {
-      throw new ForbiddenException('Refresh token revoked or not found');
+      throw new UnauthorizedException('Invalid refresh token');
     }
     if (record.revokedAt) {
-      throw new ForbiddenException('Refresh token revoked');
+      throw new UnauthorizedException('Invalid refresh token');
     }
     if (record.expiresAt.getTime() < Date.now()) {
       // revoke as hygiene
       await this.prisma.refreshToken.update({ where: { jti }, data: { revokedAt: new Date() } });
-      throw new ForbiddenException('Refresh token expired');
+      throw new UnauthorizedException('Invalid refresh token');
     }
 
     // 3) Compare hash
@@ -137,7 +137,7 @@ export class AuthService {
     if (!hashOk) {
       // possible token theft / tampering => revoke it
       await this.prisma.refreshToken.update({ where: { jti }, data: { revokedAt: new Date() } });
-      throw new ForbiddenException('Refresh token invalid');
+      throw new UnauthorizedException('Invalid refresh token');
     }
 
     // 4) Rotate: revoke old jti, issue new tokens

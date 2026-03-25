@@ -1,16 +1,17 @@
 {
-  "preset": "ts-jest/presets/default-esm",
   "moduleFileExtensions": ["js", "json", "ts"],
   "rootDir": ".",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
-  "extensionsToTreatAsEsm": [".ts"],
   "transform": {
-    "^.+\\.(t|j)s$": ["ts-jest", { "useESM": true }]
+    "^.+\\.(t|j)s$": ["ts-jest", {
+      "tsconfig": {
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "resolvePackageJsonExports": false
+      }
+    }]
   },
-  "globals": {
-    "ts-jest": {
-      "useESM": true
-    }
-  }
+  "testTimeout": 30000,
+  "globalSetup": "./setup.ts"
 }
